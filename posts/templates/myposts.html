@@ -64,6 +64,10 @@
 
 
 				<div>
+{% if not posts %}
+<div>
+	You do not have any posts yet. Hurry up an create one!</div>
+{%endif%}
 
 {% for post in posts|slice:"::-1"  %}
 
