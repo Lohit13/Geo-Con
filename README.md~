@@ -33,7 +33,7 @@ INSTALLATION
 
 Assuming you already have git-core and django installed
 
-1. git clone https://github.com/kush789/geo-con.git
+1. git clone https://github.com/Lohit13/Geo-Con.git
 2. cd geo-con
 3. register this app on google console for google oauth2 key
 4. open settings.py and type in the oauth client id and secret
