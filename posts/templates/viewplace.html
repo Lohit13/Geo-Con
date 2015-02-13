@@ -1,0 +1,328 @@
+{% load staticfiles %}
+{% load bootstrap %}
+{% load bootstrap3 %}
+<!DOCTYPE html>
+<html lang="en-EN"><head>
+   
+<meta charset="UTF-8">
+<meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+
+
+<title>Geo-Con | Look Up</title>
+
+<link rel="stylesheet" href="{% static "css/style.css" %}" media="screen">
+    <link href="{% static "css/main.css" %}" rel="stylesheet">
+
+<!--[if IE 8]>
+    <link href='http://fonts.googleapis.com/css?family=Gudea' rel='stylesheet' type='text/css'>
+	<script src="http://html5shiv.googlecode.com/svn/trunk/html5.js"></script>
+    <script src="http://demo.themeinprogress.com/nova/wp-content/themes/nova/scripts/selectivizr-min.js" type="text/javascript"></script>
+<![endif]-->
+<link rel="stylesheet" id="Custom-css" href="{% static "css/turquoise.css" %}" type="text/css" media="all">
+<link href="{% static "css/css.css" %}" rel="stylesheet" type="text/css">
+
+<link rel="stylesheet" id="bootstrap.min-css" href="{% static "css/bootstrap_002.css" %}" type="text/css" media="all">
+<link rel="stylesheet" id="bootstrap.min.responsive-css" href="{% static "css/bootstrap.css" %}" type="text/css" media="all">
+<link rel="stylesheet" id="flexslider-css" href="{% static "css/flexslider.css" %}" type="text/css" media="all">
+<link rel="stylesheet" id="font-awesome.min-css" href="{% static "css/font-awesome.css" %}" type="text/css" media="all">
+<link rel="stylesheet" id="nivoslider-css" href="{% static "css/nivoslider.css" %}" type="text/css" media="all">
+<link rel="stylesheet" id="prettyPhoto-css" href="{% static "css/prettyPhoto.css" %}" type="text/css" media="all">
+<link rel="stylesheet" href="http://js.arcgis.com/3.11/dijit/themes/claro/claro.css">
+<link rel="stylesheet" href="http://js.arcgis.com/3.11/esri/css/esri.css">
+
+<script type="text/javascript" src="Nova%20-%20Another%20creative%20Wordpress%20theme._files/comment-reply.js"></script>
+<script type="text/javascript" src="{% static "js/jquery_006.js" %}"></script>
+<script type="text/javascript" src="{% static "js/jquery-migrate.js" %}"></script>
+<script type="text/javascript" src="http://ajax.googleapis.com/ajax/libs/jquery/1.9.1/jquery.min.js"></script>
+
+  
+
+
+  <link rel="stylesheet" media="screen" href="http://fonts.googleapis.com/css?family=Open+Sans:300,400,700">
+  <link rel="stylesheet" href="{% static "css/bootstrap.min.css" %}">
+  <link href='http://fonts.googleapis.com/css?family=Montez' rel='stylesheet' type='text/css'>
+  <link rel="stylesheet" href="{% static "css/font-awesome.min.css" %}">
+
+  <!-- Custom styles for our template -->
+  <link rel="stylesheet" href="{% static "css/bootstrap-theme.css" %}" media="screen" >
+  <link rel="stylesheet" href="{% static "css/main.css" %}">
+
+  <!-- HTML5 shim and Respond.js IE8 support of HTML5 elements and media queries -->
+  <!--[if lt IE 9]>
+  <script src="assets/js/html5shiv.js"></script>
+  <script src="assets/js/respond.min.js"></script>
+  <![endif]-->
+
+
+
+
+    <script src="http://js.arcgis.com/3.11/"></script>
+    <script>
+      var map, locator;
+
+      require([
+        "esri/map", "esri/tasks/locator", "esri/graphic",
+        "esri/InfoTemplate", "esri/symbols/SimpleMarkerSymbol",
+        "esri/symbols/Font", "esri/symbols/TextSymbol",
+        "dojo/_base/array", "esri/Color",
+        "dojo/number", "dojo/parser", "dojo/dom", "dijit/registry",
+
+        "dijit/form/Button", "dijit/form/Textarea",
+        "dijit/layout/BorderContainer", "dijit/layout/ContentPane", "dojo/domReady!"
+      ], function(
+        Map, Locator, Graphic,
+        InfoTemplate, SimpleMarkerSymbol, 
+        Font, TextSymbol,
+        arrayUtils, Color,
+        number, parser, dom, registry
+      ) {
+        parser.parse();
+
+        map = new Map("map", { 
+          basemap: "streets",
+          center: [-93.5, 41.431],
+          zoom: 5
+        });
+        
+        locator = new Locator("http://geocode.arcgis.com/arcgis/rest/services/World/GeocodeServer");
+        locator.on("address-to-locations-complete", showResults);
+
+        // listen for button click then geocode
+        registry.byId("locate").on("click", locate);
+        
+        map.infoWindow.resize(200,125);
+
+        function locate() {
+          map.graphics.clear();
+          var address = {
+            "SingleLine": "{{place.destination}}"
+          };
+          locator.outSpatialReference = map.spatialReference;
+          var options = {
+            address: address,
+            outFields: ["Loc_name"]
+          };
+          locator.addressToLocations(options);
+        }
+
+        function showResults(evt) {
+          var symbol = new SimpleMarkerSymbol();
+          var infoTemplate = new InfoTemplate(
+            "Location", 
+            "Address: ${address}<br />Score: ${score}<br />Source locator: ${locatorName}"
+          );
+          symbol.setStyle(SimpleMarkerSymbol.STYLE_SQUARE);
+          symbol.setColor(new Color([153,0,51,0.75]));
+
+          var geom;
+          arrayUtils.every(evt.addresses, function(candidate) {
+            console.log(candidate.score);
+            if (candidate.score > 80) {
+              console.log(candidate.location);
+              var attributes = { 
+                address: candidate.address, 
+                score: candidate.score, 
+                locatorName: candidate.attributes.Loc_name 
+              };   
+              geom = candidate.location;
+              var graphic = new Graphic(geom, symbol, attributes, infoTemplate);
+              //add a graphic to the map at the geocoded location
+              map.graphics.add(graphic);
+              //add a text symbol to the map listing the location of the matched address.
+              var displayText = candidate.address;
+              var font = new Font(
+                "16pt",
+                Font.STYLE_NORMAL, 
+                Font.VARIANT_NORMAL,
+                Font.WEIGHT_BOLD,
+                "Helvetica"
+              );
+             
+              var textSymbol = new TextSymbol(
+                displayText,
+                font,
+                new Color("#666633")
+              );
+              textSymbol.setOffset(0,8);
+              map.graphics.add(new Graphic(geom, textSymbol));
+              return false; //break out of loop after one candidate with score greater  than 80 is found.
+            }
+          });
+          if ( geom !== undefined ) {
+            map.centerAndZoom(geom, 12);
+          }
+        }
+      });
+    </script>
+   
+
+
+    
+	<style type="text/css">.recentcomments a{display:inline !important;padding:0 !important;margin:0 !important;}</style>
+</head>
+
+<body class="home page page-id-2653 page-template page-template-masonry-two-columns-sidebar-php" onload = "document.getElementById('locate').click();">
+<div class="navbar navbar-inverse navbar-fixed-top headroom" >
+    <div class="container">
+      <div class="navbar-header">
+        <!-- Button for smallest screens -->
+        <button type="button" class="navbar-toggle" data-toggle="collapse" data-target=".navbar-collapse"><span class="icon-bar"></span> <span class="icon-bar"></span> <span class="icon-bar"></span> </button>
+        <div style="text-align:center;"><font color="white" size="60" face="Montez">Geo-Con</font></div>
+      </div>
+      <div class="navbar-collapse collapse">
+        <ul class="nav navbar-nav pull-right">
+          <li><a class="btn" href="/user/lookitup"><font color="white">Look It Up</font></a></li>
+          <li class=""><a href="/">Newsfeed</a></li>
+          <li class=""><a href="/user/myposts">My Posts</a></li>
+          <li class=""><a href="/user/create">Create Post</a></li>
+          <li class=""><a href="/logout">Sign Out</a></li>
+        </ul>
+      </div><!--/.nav-collapse -->
+    </div>
+  </div> 
+<!--<section id="subheader">
+	<div class="container">
+            	<p> Newsfeed</p>
+
+    </div>
+</section>-->
+
+<br><br>
+
+
+ <div class="jumbotron top-space">
+    <div class="container">
+      
+      <center>
+      <font size="13">{{place.destination}}</font></center>
+      
+      <div class="row">
+        <div class="col-md-3 col-sm-6 highlight">
+          <div class="h-caption"><h4><i class="fa fa-cutlery fa-5"></i>Food</h4></div>
+          <div class="h-body ">
+        <p> <ul>
+          {% for food1 in foodarr %}
+
+            <div class = 'entry-date'><li><strong>{{food1.food}}</strong></li></div>
+
+          {% endfor %}
+
+</ul> </p>
+          </div>
+        </div>
+        <div class="col-md-3 col-sm-6 highlight">
+          <div class="h-caption"><h4><i class="fa fa-flag fa-5"></i>Languages</h4></div>
+          <div class="h-body">
+            <p><ul>
+          {% for lang in languagearr %}
+
+            <div class = 'entry-date'><li><strong>{{lang.language}}</strong></li></div>
+
+          {% endfor %}
+
+          </ul>
+          </p>
+          </div>
+        </div>
+        <div class="col-md-3 col-sm-6 highlight">
+          <div class="h-caption"><h4><i class="fa fa-music fa-5"></i>Music</h4></div>
+          <div class="h-body">
+            <p><ul>
+          {% for music1 in musicarr %}
+
+            <div class = 'entry-date'><li><strong>{{music1.music}}</strong></li></div>
+
+          {% endfor %}
+
+</ul></p>
+          </div>
+        </div>
+        <div class="col-md-3 col-sm-6 highlight">
+          <div class="h-caption"><h4><i class="fa fa-pencil-square fa-5"></i>Places to visit</h4></div>
+          <div class="h-body ">
+            <p> <ul>
+          {% for place1 in placetovisitarr %}
+
+            <div class = 'entry-date'><li><strong>{{place1.place}}</strong></li></div>
+
+          {% endfor %}
+
+        </ul> </p>
+          </div>
+        </div>
+      </div> <!-- /row  -->
+    
+    </div>
+  </div>
+
+
+<div class="container content">
+
+
+        <section id="sidebar" class="span4 right-sidebar"><br><br><br>
+            <div id="mainWindow" data-dojo-type="dijit/layout/BorderContainer" 
+         data-dojo-props="design:'sidebar', gutters:false" 
+         style="width:100%; height:100%;">
+
+      <div id="leftPane">
+
+        <input type="hidden" id="address" value="chandigarh">
+        <br>
+<center>
+        <button id="locate" data-dojo-type="dijit/form/Button" class = 'btn btn-default '>RESET </button> 
+</center><br><br>
+      </div>
+
+<center>
+      <div id="map" 
+            style="width:500px; height:500px">
+      </div>
+    </center>
+
+        </section>
+
+    </div>
+
+
+
+
+    </div>
+
+
+
+	
+    
+
+<footer id="footer" class="top-space">
+
+        <div class="footer2">
+            <div class="container">
+                <div class="row">
+                    
+                    <div class="col-md-6 widget">
+                        <div class="widget-body">
+                            <p class="text-right">
+                                Geo-Con | Designed and Maintained by <font color="white">devAlpha</font>
+                            </p>
+                        </div>
+                    </div>
+
+
+                </div> <!-- /row of widgets -->
+            </div>
+        </div>
+
+    </footer>
+    
+
+
+
+
+  <!-- JavaScript libs are placed at the end of the document so the pages load faster -->
+  <script src="http://ajax.googleapis.com/ajax/libs/jquery/1.10.2/jquery.min.js"></script>
+  <script src="http://netdna.bootstrapcdn.com/bootstrap/3.0.0/js/bootstrap.min.js"></script>
+  <script src="{% static "js/headroom.min.js" %}"></script>
+  <script src="{% static "js/jQuery.headroom.min.js" %}"></script>
+  <script src="{% static "js/template.js" %}"></script>
+
+</body></html>
